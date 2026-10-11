@@ -1,0 +1,24 @@
+{
+  "name": "anuvaad-blueprint",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-anuvaad.ps1",
+    "start:node": "node server.js",
+    "sync:ddinter": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/sync-ddinter.ps1",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "neo4j-driver": "^6.2.0",
+    "pg": "^8.23.1",
+    "sqlite3": "^6.0.1",
+    "tesseract.js": "^7.0.0"
+  }
+}

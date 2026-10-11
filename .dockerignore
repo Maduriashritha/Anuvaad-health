@@ -1,0 +1,8 @@
+.git
+.runlogs
+node_modules
+.env
+.env.*
+anuvaad_health.db
+anuvaad_health.db-*
+*.log

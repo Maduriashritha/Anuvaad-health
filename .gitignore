@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.runlogs/
+*.log
+anuvaad_health.db
+anuvaad_health.db-journal
+anuvaad_health.db-wal
+anuvaad_health.db-shm
