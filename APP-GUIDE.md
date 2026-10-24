@@ -23,7 +23,7 @@ The user should correct OCR errors and confirm each ingredient, strength, route,
 | Splash / start | Enters the Anuvaad experience. | Introduces the product. |
 | Onboarding | Reviews the purpose and workflow. | Sets expectations before patient information is entered. |
 | Language | Chooses English, Hindi, or Telugu. | Selects interface and speech language. Browser voices determine which spoken voices are available. |
-| Login | Creates an account or signs in. | Associates saved profiles and scan history with an account. Passwords are stored as salted scrypt hashes; a session cookie is HTTP-only and SameSite=Strict. |
+| Login | Creates an account or signs in. | Associates saved profiles and scan history with an account. The patient profile name defaults to the signed-in account name. Passwords are stored as salted scrypt hashes; a session cookie is HTTP-only and SameSite=Strict. |
 | Patient profile | Enters demographics, diagnoses, surgery history, allergies, current and past medicines, prior reactions, clinical alerts, weight, and eGFR when known. | Gives the checker context; missing or unconfirmed information is surfaced as a data-quality gap. |
 | Prescription scanner | Uploads/captures a prescription or adds medicines manually. OCR cards show the text, regimen fields, confidence/review status, and available RxNorm resolution. | Turns a picture into editable candidate data. The user confirms/corrects the candidate before analysis. |
 | Context cross-check matrix | Views prescribed medicines alongside profile context and flagged intersections. | Helps inspect which patient factors were involved in a finding. It only visualizes rules and data the engine actually has. |
@@ -44,8 +44,8 @@ Screen labels in the HTML are implementation comments and are not perfectly sequ
 
 OCR converts pixels in the uploaded image into candidate text. Anuvaad has two paths:
 
-1. **Local Tesseract.js:** runs English OCR on the app server. Without a Gemini key, local text and simple line heuristics propose medicine rows. This path is useful offline from a cloud AI provider, but it is not a handwriting-specific prescription model.
-2. **Optional Gemini Vision:** when a key is configured or entered, the image is sent to Google's Gemini Vision service to propose literal medicine rows and visible regimen fields. This is an external image-processing request.
+1. **Local Tesseract.js:** runs English OCR on the app server. When cloud OCR is not configured, local text and simple line heuristics can propose medicine rows. This path is not a handwriting-specific prescription model.
+2. **Gemini Vision:** when the site owner configures `GEMINI_API_KEY` on the server, the image is sent to Google's `gemini-3.5-flash-lite` model to propose literal medicine rows and visible regimen fields. Visitors do not enter or receive the API key. This is an external image-processing request.
 
 When Gemini is used, Anuvaad also gets a Tesseract transcription and checks whether extracted name, strength, and directions have textual support in that second read. Disagreements are marked for visual review and lower a high OCR confidence label. This agreement check is a simple support heuristic, not a calibrated confidence score or proof that either transcription is right.
 
@@ -86,7 +86,7 @@ The diagnostic log records which vectors ran, the configured matches, reference-
 
 ## 7. Explanations, translation, and speech
 
-Explanation cards are rendered from the deterministic findings and any available evidence. Safer alternatives appear only when a configured finding supplies one; the app does not search or rank every possible alternative. If the user chooses the optional Gemini plain-language feature, it receives selected finding text and rewrites the explanation in English, Hindi, or Telugu. It is explicitly restricted from changing the alert, severity, or recommendation. The browser's built-in SpeechSynthesis reads the summary; voice availability and pronunciation vary by browser, operating system, and installed language voices.
+Explanation cards are rendered from the deterministic findings and any available evidence. Safer alternatives appear only when a configured finding supplies one; the app does not search or rank every possible alternative. If the user chooses the Gemini plain-language feature, the site-managed `gemini-3.5-flash-lite` model receives selected finding text and rewrites the explanation in English, Hindi, or Telugu. It is explicitly restricted from changing the alert, severity, or recommendation. The browser's built-in SpeechSynthesis reads the summary; voice availability and pronunciation vary by browser, operating system, and installed language voices.
 
 ## 8. EHR and FHIR
 
@@ -107,7 +107,7 @@ FHIR data is shown for human review before it is applied to the profile. Patient
 
 The AES-256-GCM control encrypts a **temporary browser preview** using a transient in-memory key. It does not encrypt the existing PostgreSQL, Neo4j, or SQLite clinical records at rest. The hash-chain view shows tamper evidence, not an external digital signature or write-once archive. The app has no HIPAA/GDPR compliance attestation and should not receive real patient data as a public hackathon demo.
 
-Prescription images are sent to the app server for OCR. If Gemini Vision is enabled, the image is also sent to Google's service. The prescription scan path stores extracted medicine data and only a truncated image-data prefix in SQLite (not a complete recoverable image); users should still treat the scan and extracted text as sensitive data. A Gemini key typed into the browser is kept in that browser tab's session storage for the current session.
+Prescription images are sent to the app server for OCR. If Gemini Vision is enabled, the image is also sent to Google's service. The prescription scan path stores extracted medicine data and only a truncated image-data prefix in SQLite (not a complete recoverable image); users should still treat the scan and extracted text as sensitive data. The Gemini API key is stored only in the server environment and is never requested from or sent to visitors' browsers.
 
 For a public GitHub repository, keep `.env`, `anuvaad_health.db`, patient images, logs, and `node_modules` out of Git. Keep `data/DDINTER-NOTICE.md` beside the DDInter files. See [`DEPLOY-RAILWAY.md`](DEPLOY-RAILWAY.md) for deployment setup.
 
@@ -115,7 +115,7 @@ For a public GitHub repository, keep `.env`, `anuvaad_health.db`, patient images
 
 | Feature | Current state |
 |---|---|
-| OCR | Local English Tesseract; optional Gemini Vision; independent local text-support cross-check when Gemini is used; manual confirmation expected. |
+| OCR | Local English Tesseract can provide a basic reading; when configured, the site-managed Gemini 3.5 Flash-Lite model provides cloud OCR with an independent local text-support cross-check. Manual confirmation is expected. |
 | Drug name/class resolution | RxNorm/RxClass API lookup; approximate matches need user confirmation. |
 | Biomedical NLP | scispaCy FastAPI sidecar; chemical/disease candidate mentions only. |
 | Five-vector safety | Deterministic rules plus partial DDInter exact-pair lookup; no patient-level ML output. |
