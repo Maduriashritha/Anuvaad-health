@@ -525,10 +525,10 @@
                             </div>
                             <input id="clinical-record-image" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" class="block w-full text-[10px] text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-white file:px-2.5 file:py-1.5 file:text-[10px] file:font-bold file:text-cyan-800">
                             <div class="flex gap-1.5">
-                                <input id="clinical-record-api-key" type="password" autocomplete="off" placeholder="Optional Gemini key for clinical record extraction" class="min-w-0 flex-1 px-2.5 py-1.5 text-[10px] rounded-lg bg-white border border-cyan-200 focus:outline-none focus:border-cyan-500">
+                                <span class="min-w-0 flex-1 text-[9px] text-cyan-800">Uses the site-managed Gemini Flash-Lite model. The API key stays private.</span>
                                 <button id="clinical-record-scan-button" type="button" onclick="scanClinicalRecord()" class="px-3 py-1.5 rounded-lg bg-cyan-700 text-white text-[10px] font-bold"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Scan record</button>
                             </div>
-                            <p class="text-[9px] text-slate-500">With a Gemini key, the selected image is sent to Google for extraction. Without a key, local OCR transcribes text only. The source image and suggestions are not saved by this scan step.</p>
+                            <p class="text-[9px] text-slate-500">The selected image is sent to Google Gemini 3.5 Flash-Lite for extraction. The site key stays private. The source image and suggestions are not saved by this scan step.</p>
                             <div id="clinical-record-review" class="hidden space-y-2" aria-live="polite"></div>
                         </div>
                         <!-- Full Name & Age -->
@@ -689,27 +689,13 @@
                             <span id="model-source-indicator" class="text-[9px] px-2 py-0.5 rounded font-mono bg-cyan-50 text-cyan-700 font-bold">Catalog Ready</span>
                         </div>
 
-                        <!-- API Key Input + Fetch Button -->
-                        <div class="flex gap-1.5">
-                            <div class="relative flex-1">
-                                <input type="password" id="gemini-key-input" placeholder="Optional Gemini key for cloud handwriting OCR" class="w-full pl-3 pr-8 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
-                                <button type="button" onclick="toggleKeyVisibility()" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs">
-                                    <i id="key-vis-icon" class="fa-solid fa-eye"></i>
-                                </button>
-                            </div>
-                            <button onclick="fetchAvailableGeminiModels()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1">
-                                <i class="fa-solid fa-rotate text-[10px]"></i>
-                                <span id="btn-fetch-models-lbl">Fetch Models</span>
-                            </button>
-                        </div>
-
-                        <p id="local-ocr-note" class="text-[10px] leading-relaxed text-slate-500">No key is needed for local English OCR. Add a Gemini key only for cloud handwriting recognition; that sends the prescription image to Google.</p>
+                        <p id="local-ocr-note" class="text-[10px] leading-relaxed text-slate-500">Prescription images use the site-managed Gemini 3.5 Flash-Lite model. If Gemini is unavailable, the scan stops without guessing.</p>
 
                         <!-- Dynamic Model Dropdown -->
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 mb-0.5" id="lbl-model-select">Selected Vision AI Model</label>
-                            <select id="gemini-model-select" class="w-full px-3 py-1.5 text-xs rounded-xl bg-white border border-slate-200 font-medium text-slate-800 focus:outline-none focus:border-cyan-500">
-                                <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommended)</option>
+                            <select id="gemini-model-select" disabled aria-label="Fixed Gemini model" class="w-full px-3 py-1.5 text-xs rounded-xl bg-slate-100 border border-slate-200 font-medium text-slate-800">
+                                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
                             </select>
                         </div>
                     </div>
@@ -1439,9 +1425,9 @@
             authPending: false,
             authToken: null,
             ocrConfig: {
-                apiKey: sessionStorage.getItem('gemini_api_key') || '',
-                availableModels: ['gemini-3.8-flash'],
-                selectedModel: 'gemini-3.8-flash',
+                apiKey: '',
+                availableModels: ['gemini-3.5-flash-lite'],
+                selectedModel: 'gemini-3.5-flash-lite',
                 isFetchingModels: false
             },
             scannedPrescription: {
@@ -1449,7 +1435,7 @@
                 extractedMeds: [],
                 biomedicalNlp: null,
                 scanId: null,
-                modelUsed: 'gemini-3.8-flash',
+                modelUsed: 'gemini-3.5-flash-lite',
                 confidenceScore: null
             },
             clinicalRecordSuggestions: null,
@@ -2311,11 +2297,8 @@
             goToScreen(1);
             restoreAuthSession();
 
-            // Session restore Gemini Key
-            if (appState.ocrConfig.apiKey) {
-                const keyInput = document.getElementById('gemini-key-input');
-                if (keyInput) keyInput.value = appState.ocrConfig.apiKey;
-            }
+            sessionStorage.removeItem('gemini_api_key');
+
 
             // Keyboard navigation listener
             window.addEventListener('keydown', (e) => {
@@ -2753,7 +2736,6 @@
             updateText('t-s5-title', t.s5Title);
             updateText('t-s5-badge', t.s5Badge);
             updateText('lbl-gemini-config', t.lblGeminiConfig);
-            updatePlaceholder('gemini-key-input', t.phGeminiKey);
             updateText('local-ocr-note', t.ocrLocalNote);
             updateText('btn-fetch-models-lbl', t.btnFetchModelsLbl);
             updateText('lbl-model-select', t.lblModelSelect);
@@ -2977,8 +2959,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     appState.backendOnline = true;
-                    const userKey = appState.ocrConfig?.apiKey || document.getElementById('gemini-key-input')?.value?.trim();
-                    const ocrReady = Boolean(data.localOcrAvailable || userKey || data.ocrConfigured);
+                    const ocrReady = Boolean(data.ocrConfigured);
                     const stores = data.clinicalStores || {};
                     const storesReady = Boolean(data.clinicalStoresReady);
                     const settingsStatus = document.getElementById('settings-api-status');
@@ -3171,12 +3152,10 @@
             const file = e.target.files?.[0];
             if (!file) return;
             const status = document.getElementById('current-med-scan-status');
-            const apiKey = appState.ocrConfig.apiKey || document.getElementById('gemini-key-input')?.value?.trim() || '';
-            const model = document.getElementById('gemini-model-select')?.value || 'gemini-3.8-flash';
             status.textContent = 'Reading the medicine label…'; status.classList.remove('hidden');
             try {
                 const prepared = await prepareOcrImage(file);
-                const response = await apiFetch(`${appState.apiBase}/api/ocr/process-prescription`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: prepared.data, mimeType: prepared.mimeType, apiKey, model, patientId: appState.patientProfile.id }) });
+                const response = await apiFetch(`${appState.apiBase}/api/ocr/process-prescription`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: prepared.data, mimeType: prepared.mimeType, patientId: appState.patientProfile.id }) });
                 const result = await response.json();
                 if (!response.ok || !Array.isArray(result.medications) || !result.medications.length) throw new Error(result.message || 'The label could not be read reliably. Enter the medicine name and strength manually.');
                 const input = document.getElementById('intake-current-meds');
@@ -3194,7 +3173,6 @@
             if (!appState.authenticatedUser) { showToast('Sign in before scanning a patient record.'); goToScreen(4); return; }
             const button = document.getElementById('clinical-record-scan-button');
             const review = document.getElementById('clinical-record-review');
-            const key = document.getElementById('clinical-record-api-key')?.value.trim() || '';
             button.disabled = true;
             button.textContent = 'Reading…';
             review.classList.remove('hidden');
@@ -3203,8 +3181,7 @@
                 const prepared = await prepareOcrImage(file);
                 const response = await apiFetch(`${appState.apiBase}/api/ocr/process-clinical-record`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: prepared.data, mimeType: prepared.mimeType, apiKey: key,
-                        model: document.getElementById('gemini-model-select')?.value || appState.ocrConfig.selectedModel })
+                    body: JSON.stringify({ image: prepared.data, mimeType: prepared.mimeType })
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || `Record scan failed (${response.status}).`);
@@ -3435,117 +3412,26 @@
         // ==========================================
         // SCREEN 5: VISION AI OCR & MODEL SELECTOR
         // ==========================================
-        function toggleKeyVisibility() {
-            const keyInput = document.getElementById('gemini-key-input');
-            const icon = document.getElementById('key-vis-icon');
-            if (keyInput.type === 'password') {
-                keyInput.type = 'text';
-                icon.className = 'fa-solid fa-eye-slash';
-            } else {
-                keyInput.type = 'password';
-                icon.className = 'fa-solid fa-eye';
-            }
-        }
-
         async function fetchAvailableGeminiModels() {
-            const keyInput = document.getElementById('gemini-key-input');
-            const key = keyInput ? keyInput.value.trim() : '';
-            if (key) {
-                sessionStorage.setItem('gemini_api_key', key);
-                appState.ocrConfig.apiKey = key;
-            }
-
             const selectEl = document.getElementById('gemini-model-select');
-            const ind = document.getElementById('model-source-indicator');
-            if (selectEl) selectEl.innerHTML = '<option>Querying Google Generative Language API...</option>';
-
-            try {
-                const res = await apiFetch(`${appState.apiBase}/api/ocr/fetch-models`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiKey: key })
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.models && data.models.length > 0) {
-                        selectEl.innerHTML = '';
-                        data.models.forEach(m => {
-                            const opt = document.createElement('option');
-                            opt.value = m.name;
-                            opt.textContent = `${m.displayName || m.name} [${m.speed || 'Fast'}]`;
-                            selectEl.appendChild(opt);
-                        });
-                        appState.ocrConfig.availableModels = data.models;
-
-                        if (ind) {
-                            if (data.source === 'live_google_api') {
-                                ind.textContent = `● ${data.models.length} Models (Live Quota)`;
-                                ind.className = 'text-[9px] px-2 py-0.5 rounded font-mono bg-emerald-50 text-emerald-700 font-bold';
-                            } else {
-                                const t = i18n[appState.currentLang] || i18n.en;
-                                ind.textContent = `${data.models.length} ${t.modelReady}`;
-                                ind.className = 'text-[9px] px-2 py-0.5 rounded font-mono bg-cyan-50 text-cyan-700 font-bold';
-                            }
-                        }
-
-                        if (data.success && data.source === 'live_google_api') {
-                            const msg = appState.currentLang === 'hi'
-                                ? `आपकी एपीआई कुंजी से ${data.models.length} मॉडल सफलतापूर्वक लोड हुए!`
-                                : appState.currentLang === 'te'
-                                ? `మీ API కీ నుండి ${data.models.length} మోడల్స్ విజయవంతంగా లోడ్ అయ్యాయి!`
-                                : `Loaded all ${data.models.length} available models for your API key!`;
-                            showToast(msg);
-                            return;
-                        } else if (data.warning) {
-                            showToast(data.warning);
-                        }
-                    }
-                }
-            } catch (err) {
-                console.warn('Backend model fetch failed, trying direct browser query:', err);
-            }
-
-            // Direct browser query fallback if backend proxy network fails
-            if (key) {
-                try {
-                    const directRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-                    if (directRes.ok) {
-                        const directData = await directRes.json();
-                        const rawModels = directData.models || [];
-                        const validModels = rawModels
-                            .map(m => ({
-                                name: m.name.replace('models/', ''),
-                                displayName: m.displayName || m.name.replace('models/', ''),
-                                speed: m.name.includes('flash') ? 'Ultra-Fast' : 'High Precision'
-                            }))
-                            .filter(m => m.name.includes('gemini'));
-                        if (validModels.length > 0) {
-                            selectEl.innerHTML = '';
-                            validModels.forEach(m => {
-                                const opt = document.createElement('option');
-                                opt.value = m.name;
-                                opt.textContent = `${m.displayName} [${m.speed}]`;
-                                selectEl.appendChild(opt);
-                            });
-                            if (ind) {
-                                ind.textContent = `● ${validModels.length} Models (Direct Google)`;
-                                ind.className = 'text-[9px] px-2 py-0.5 rounded font-mono bg-emerald-50 text-emerald-700 font-bold';
-                            }
-                            showToast(`Loaded ${validModels.length} models directly from Google API!`);
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Direct fetch failed:', e);
-                }
-            }
-
-            // Fallback default options catalog
+            const indicator = document.getElementById('model-source-indicator');
             if (selectEl) {
-                selectEl.innerHTML = `
-                    <option value="gemini-3.8-flash">Gemini 3.8 Flash (Recommended)</option>
-                `;
+                selectEl.innerHTML = '<option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>';
+                selectEl.value = 'gemini-3.5-flash-lite';
+            }
+            try {
+                const response = await apiFetch(`${appState.apiBase}/api/ocr/fetch-models`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (indicator) {
+                    indicator.textContent = data.configured ? 'Site key ready' : 'Site key not configured';
+                    indicator.className = data.configured
+                        ? 'text-[9px] px-2 py-0.5 rounded font-mono bg-emerald-50 text-emerald-700 font-bold'
+                        : 'text-[9px] px-2 py-0.5 rounded font-mono bg-amber-50 text-amber-700 font-bold';
+                }
+            } catch (_) {
+                if (indicator) indicator.textContent = 'Gemini status unavailable';
             }
         }
 
@@ -3635,55 +3521,6 @@
                 // Keep support for image types the browser cannot decode locally.
                 return { data: original, mimeType: file.type || 'image/jpeg' };
             }
-        }
-
-        async function runGeminiPrescriptionOcrInBrowser(imageDataUrl, mimeType, apiKey, model) {
-            const imageData = String(imageDataUrl || '').replace(/^data:[^,]*,/, '');
-            if (!imageData || !apiKey) throw new Error('Prescription image or Gemini API key is missing.');
-            const prompt = `Act as a literal prescription transcription system, not a medicine identifier. Inspect the entire image and transcribe every medicine row in reading order. Copy the name, brand, script, spelling, strength, units, and directions exactly as visible; do not translate, normalize, expand abbreviations, infer a drug or ingredient from context, or correct spelling. Keep name limited to medicine wording and strength; put the complete visible row in rawOcr. Extract dosage, strength, frequency, duration, route, and brandName only when explicitly legible; otherwise return an empty string. Do not infer active ingredients/API names: these must come from verified RxNorm resolution. Preserve readable characters and use [unclear] only for unreadable spans. If a row is ambiguous, include the best literal partial transcription and set confidence low. Never omit a medicine row just because its name is unclear. Return JSON only: {"medications":[{"name":"literal medicine wording and strength","rawOcr":"complete visible row","brandName":"clearly visible brand or empty","dosage":"only written directions","strength":"explicit strength or empty","frequency":"explicit frequency or empty","duration":"explicit duration or empty","route":"explicit route or empty","confidence":"high, medium, or low"}]}. Use an empty array only when no medicine row is present.`;
-            const cleanModel = String(model || 'gemini-2.5-flash').replace(/^models\//, '');
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cleanModel)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [
-                        { text: prompt },
-                        { inline_data: { mime_type: mimeType || 'image/jpeg', data: imageData } }
-                    ] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 4096, responseMimeType: 'application/json' }
-                })
-            });
-            const result = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const detail = result.error?.message || `Google returned HTTP ${response.status}.`;
-                throw new Error(`Gemini could not read the prescription: ${detail}`);
-            }
-            const text = (result.candidates?.[0]?.content?.parts || []).map(part => part?.text || '').join('\n').trim();
-            if (!text) throw new Error('Gemini returned no prescription text. Check the image and try again.');
-            let parsed;
-            try {
-                parsed = JSON.parse(text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim());
-            } catch {
-                const match = text.match(/\{[\s\S]*\}/);
-                if (!match) throw new Error('Gemini returned unreadable OCR data. Please scan again.');
-                parsed = JSON.parse(match[0]);
-            }
-            const medications = Array.isArray(parsed) ? parsed : parsed.medications;
-            if (!Array.isArray(medications) || !medications.length) throw new Error('No medicine names were legible in the prescription image. Try a close, upright photo.');
-            return medications.filter(med => med && String(med.name || '').trim()).map(med => ({
-                ...med,
-                name: String(med.name).trim(),
-                rawOcr: String(med.rawOcr || med.name).trim(),
-                dosage: String(med.dosage || '').trim(),
-                brandName: String(med.brandName || '').trim(),
-                apiName: '',
-                strength: String(med.strength || '').trim(),
-                frequency: String(med.frequency || '').trim(),
-                duration: String(med.duration || '').trim(),
-                route: String(med.route || '').trim(),
-                ocrConfidence: ['high', 'medium', 'low'].includes(String(med.confidence || '').toLowerCase()) ? String(med.confidence).toLowerCase() : 'not_assessed'
-            }));
         }
 
         function renderScanDoseReview(evaluation = null) {
@@ -3885,23 +3722,18 @@
         async function runPrescriptionAnalysis() {
             const overlay = document.getElementById('scanning-overlay');
             const progTitle = document.getElementById('scan-progress-title');
-            const selectedModel = document.getElementById('gemini-model-select')?.value || 'gemini-3.8-flash';
-            const enteredApiKey = appState.ocrConfig.apiKey || document.getElementById('gemini-key-input')?.value?.trim() || '';
-            if (enteredApiKey) { appState.ocrConfig.apiKey = enteredApiKey; sessionStorage.setItem('gemini_api_key', enteredApiKey); }
+            const selectedModel = 'gemini-3.5-flash-lite';
             if (overlay) overlay.classList.remove('hidden');
             appState.scannedPrescription.extractedMeds = [];
             appState.scannedPrescription.scanId = null;
             renderDynamicMeds();
 
             const t = i18n[appState.currentLang] || i18n.en;
-            if (progTitle) progTitle.textContent = enteredApiKey
-                ? `${t.scanProgressTitle} (${selectedModel})`
-                : 'Reading locally with English OCR — verify every medicine and direction';
+            if (progTitle) progTitle.textContent = `${t.scanProgressTitle} (${selectedModel})`;
 
             let extractedSuccessfully = false;
             let extractionError = '';
 
-            let shouldTryBrowserGemini = false;
             try {
                 const res = await apiFetch(`${appState.apiBase}/api/ocr/process-prescription`, {
                     method: 'POST',
@@ -3910,7 +3742,6 @@
                         image: appState.scannedPrescription.rawImage,
                         mimeType: appState.scannedPrescription.mimeType || 'image/jpeg',
                         model: selectedModel,
-                        apiKey: enteredApiKey,
                         patientId: appState.patientProfile.id
                     })
                 });
@@ -3918,7 +3749,6 @@
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
                     extractionError = data.message || data.error || `Prescription OCR failed (HTTP ${res.status}).`;
-                    shouldTryBrowserGemini = data.code === 'GEMINI_NETWORK_ERROR';
                 } else {
                     if (data.medications && data.medications.length > 0) {
                         appState.scannedPrescription.extractedMeds = data.medications;
@@ -3931,53 +3761,6 @@
             } catch (err) {
                 console.warn('Prescription OCR request failed:', err);
                 extractionError = `Local scanner connection failed: ${err.message}`;
-                shouldTryBrowserGemini = true;
-            }
-
-            if (!extractedSuccessfully && enteredApiKey && appState.scannedPrescription.rawImage) {
-                try {
-                    const localRes = await apiFetch(`${appState.apiBase}/api/ocr/process-prescription`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            image: appState.scannedPrescription.rawImage,
-                            mimeType: appState.scannedPrescription.mimeType || 'image/jpeg',
-                            model: selectedModel,
-                            patientId: appState.patientProfile.id
-                        })
-                    });
-                    const localData = await localRes.json().catch(() => ({}));
-                    if (localRes.ok && Array.isArray(localData.medications) && localData.medications.length) {
-                        appState.scannedPrescription.extractedMeds = localData.medications;
-                        appState.scannedPrescription.biomedicalNlp = localData.biomedicalNlp || null;
-                        appState.scannedPrescription.scanId = localData.scanId || null;
-                        appState.scannedPrescription.modelUsed = localData.modelUsed;
-                        extractedSuccessfully = true;
-                        extractionError = '';
-                    } else if (localData.message) {
-                        extractionError = `${extractionError ? `${extractionError} ` : ''}Local OCR fallback: ${localData.message}`;
-                    }
-                } catch (localErr) {
-                    extractionError = `${extractionError ? `${extractionError} ` : ''}Local OCR fallback failed: ${localErr.message}`;
-                }
-            }
-
-            if (!extractedSuccessfully && shouldTryBrowserGemini && enteredApiKey && appState.scannedPrescription.rawImage) {
-                try {
-                    const medications = await runGeminiPrescriptionOcrInBrowser(
-                        appState.scannedPrescription.rawImage,
-                        appState.scannedPrescription.mimeType || 'image/jpeg',
-                        enteredApiKey,
-                        selectedModel
-                    );
-                    appState.scannedPrescription.extractedMeds = medications;
-                    appState.scannedPrescription.modelUsed = `${selectedModel} (Gemini Vision browser scan)`;
-                    extractedSuccessfully = medications.length > 0;
-                    extractionError = '';
-                } catch (browserErr) {
-                    console.warn('Browser Gemini OCR fallback failed:', browserErr);
-                    extractionError = browserErr.message || extractionError;
-                }
             }
 
             // Show the OCR result immediately. RxNorm network calls run after this render
@@ -5057,8 +4840,6 @@
                     : 'Selected medication safety findings and recommendations will be sent to Google Gemini for simpler wording and may include medicine or condition names. The patient name and prescription image are not sent. Continue?';
             if (!window.confirm(consentText)) return;
 
-            const key = appState.ocrConfig?.apiKey || document.getElementById('gemini-key-input')?.value?.trim() || '';
-            const model = appState.ocrConfig?.model || document.getElementById('gemini-model-select')?.value || '';
             button.disabled = true;
             host.replaceChildren();
             const status = document.createElement('p');
@@ -5072,7 +4853,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         findings: warnings.map(w => ({ severity: w.severity, title: w.title, description: w.description, recommendation: w.recommendation, sourceUrls: w.sourceUrls || [] })),
-                        language: appState.currentLang, model, apiKey: key
+                        language: appState.currentLang
                     })
                 });
                 const payload = await response.json();
