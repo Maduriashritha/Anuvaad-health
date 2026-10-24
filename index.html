@@ -2413,9 +2413,10 @@
         }
 
         function hydratePatientForm(profile) {
-            appState.patientProfile = { ...appState.patientProfile, ...profile };
+            const accountName = String(appState.authenticatedUser?.displayName || '').trim();
+            appState.patientProfile = { ...appState.patientProfile, ...profile, fullName: accountName };
             const values = {
-                'intake-fullname': profile.fullName, 'intake-age': profile.age, 'intake-gender': profile.gender,
+                'intake-fullname': accountName, 'intake-age': profile.age, 'intake-gender': profile.gender,
                 'intake-weight': profile.weightKg, 'intake-egfr': profile.egfr,
                 'intake-clinical-alerts': (profile.clinicalAlerts || []).join(', '),
                 'intake-other-surgeries': '',
