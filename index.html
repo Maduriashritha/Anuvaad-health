@@ -677,7 +677,7 @@
                             <span class="text-[10px] font-bold text-cyan-600 uppercase tracking-wider" id="t-s5-step">Step 2: Vision AI OCR</span>
                             <h2 class="text-lg font-extrabold text-slate-900" id="t-s5-title">Prescription Scanner</h2>
                         </div>
-                        <span id="t-s5-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800">Dynamic OCR</span>
+                        <span id="t-s5-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800">Gemini 3.5 Flash-Lite</span>
                     </div>
 
                     <!-- Gemini API Key & Model Selector Bar -->
@@ -686,7 +686,7 @@
                             <span class="text-[11px] font-bold text-slate-700 flex items-center gap-1.5" id="lbl-gemini-config">
                                 <i class="fa-brands fa-google text-cyan-600"></i> <span>Gemini Vision Model Configuration</span>
                             </span>
-                            <span id="model-source-indicator" class="text-[9px] px-2 py-0.5 rounded font-mono bg-cyan-50 text-cyan-700 font-bold">Catalog Ready</span>
+                            <span id="model-source-indicator" class="text-[9px] px-2 py-0.5 rounded font-mono bg-cyan-50 text-cyan-700 font-bold">Checking site key…</span>
                         </div>
 
                         <p id="local-ocr-note" class="text-[10px] leading-relaxed text-slate-500">Prescription images use the site-managed Gemini 3.5 Flash-Lite model. If Gemini is unavailable, the scan stops without guessing.</p>
@@ -1536,12 +1536,12 @@
                 // Screen 5
                 s5Step: "Screen 6: Prescription OCR",
                 s5Title: "Prescription Scanner",
-                s5Badge: "Dynamic OCR",
+                s5Badge: "Gemini 3.5 Flash-Lite",
                 lblGeminiConfig: "Gemini Vision Model Configuration",
-                modelReady: "Catalog Ready",
+                modelReady: "Checking site key…",
                 modelLive: "Live Gemini Quota",
                 phGeminiKey: "Optional Gemini key for cloud handwriting OCR",
-                ocrLocalNote: "No key is needed for local English OCR. Add a Gemini key only for cloud handwriting recognition; that sends the prescription image to Google.",
+                ocrLocalNote: "Gemini 3.5 Flash-Lite is configured by the site. Your prescription image is sent securely to Google for analysis; you do not need to enter an API key.",
                 btnFetchModelsLbl: "Fetch Models",
                 lblModelSelect: "Selected Vision AI Model",
                 scanProgressTitle: "Analyzing prescription via Gemini Vision AI...",
@@ -1807,12 +1807,12 @@
                 // Screen 5
                 s5Step: "स्क्रीन 6: प्रिस्क्रिप्शन ओसीआर",
                 s5Title: "प्रिस्क्रिप्शन स्कैनर",
-                s5Badge: "गतिशील ओसीआर",
+                s5Badge: "Gemini 3.5 Flash-Lite",
                 lblGeminiConfig: "जेमिनी विज़न मॉडल कॉन्फ़िगरेशन",
-                modelReady: "मॉडल सूची तैयार",
+                modelReady: "साइट कुंजी जाँची जा रही है…",
                 modelLive: "लाइव जेमिनी कोटा",
                 phGeminiKey: "क्लाउड हस्तलिखित OCR के लिए वैकल्पिक Gemini कुंजी",
-                ocrLocalNote: "स्थानीय अंग्रेज़ी OCR के लिए कुंजी की ज़रूरत नहीं है। हस्तलिखित पहचान के लिए वैकल्पिक Gemini कुंजी जोड़ें; इससे पर्चे की छवि Google को भेजी जाएगी।",
+                ocrLocalNote: "Gemini 3.5 Flash-Lite साइट द्वारा कॉन्फ़िगर किया गया है। विश्लेषण के लिए आपकी पर्चे की छवि Google को सुरक्षित रूप से भेजी जाती है; आपको API कुंजी दर्ज करने की ज़रूरत नहीं है।",
                 btnFetchModelsLbl: "मॉडल लोड करें",
                 lblModelSelect: "चयनित विज़न एआई मॉडल",
                 scanProgressTitle: "जेमिनी विज़न एआई द्वारा पर्चे का विश्लेषण किया जा रहा है...",
@@ -2078,12 +2078,12 @@
                 // Screen 5
                 s5Step: "స్క్రీన్ 6: ప్రిస్క్రిప్షన్ OCR",
                 s5Title: "ప్రిస్క్రిప్షన్ స్కానర్",
-                s5Badge: "డైనమిక్ OCR",
+                s5Badge: "Gemini 3.5 Flash-Lite",
                 lblGeminiConfig: "జెమిని విజన్ మోడల్ కాన్ఫిగరేషన్",
-                modelReady: "మోడల్స్ సిద్ధంగా ఉన్నాయి",
+                modelReady: "సైట్ కీని తనిఖీ చేస్తోంది…",
                 modelLive: "లైవ్ జెమిని కోటా",
                 phGeminiKey: "క్లౌడ్ చేతిరాత OCR కోసం ఐచ్ఛిక Gemini కీ",
-                ocrLocalNote: "స్థానిక ఆంగ్ల OCRకు కీ అవసరం లేదు. చేతిరాత గుర్తింపుకు ఐచ్ఛిక Gemini కీ జోడించండి; అప్పుడు ప్రిస్క్రిప్షన్ చిత్రం Googleకు పంపబడుతుంది.",
+                ocrLocalNote: "Gemini 3.5 Flash-Lite సైట్‌లోనే కాన్ఫిగర్ చేయబడింది. విశ్లేషణ కోసం మీ ప్రిస్క్రిప్షన్ చిత్రం Googleకు సురక్షితంగా పంపబడుతుంది; మీరు API కీని నమోదు చేయాల్సిన అవసరం లేదు.",
                 btnFetchModelsLbl: "మోడల్స్ పొందండి",
                 lblModelSelect: "ఎంచుకున్న విజన్ AI మోడల్",
                 scanProgressTitle: "జెమిని విజన్ AI ద్వారా ప్రిస్క్రిప్షన్ విశ్లేషించబడుతోంది...",
@@ -2291,6 +2291,7 @@
             initScreenDropdown();
             initClock();
             checkBackendHealth();
+            void fetchAvailableGeminiModels();
             applyLanguageTranslations();
             setViewMode('fluid');
             renderDynamicMeds();
