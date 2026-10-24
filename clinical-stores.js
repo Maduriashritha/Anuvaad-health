@@ -275,7 +275,7 @@ async function initializeClinicalStores() {
                     source_url TEXT NOT NULL
                 )
             `);
-            if (!graphDriver) throw new Error('Neo4j credentials were not supplied to the backend process.');
+            if (!graphDriver) return; // Keep PostgreSQL-backed accounts available while Neo4j is offline.
             const session = graphDriver.session();
             try {
                 await session.run('CREATE CONSTRAINT anuvaad_patient_id IF NOT EXISTS FOR (p:Patient) REQUIRE p.patientId IS UNIQUE');
